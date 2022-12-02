@@ -32,20 +32,12 @@ impl Play {
     fn from_expected(line: &str) -> Self {
         line.split_once(' ')
             .map(|(them, expected)| {
-                let them = them.into();
+                let them: Hand = them.into();
 
                 let us = match expected {
-                    "X" => match them {
-                        Hand::Rock => Hand::Scissors,
-                        Hand::Scissors => Hand::Paper,
-                        Hand::Paper => Hand::Rock,
-                    }, //lose
+                    "X" => them.get_lose_play(),
                     "Y" => them.clone(),
-                    "Z" => match them {
-                        Hand::Rock => Hand::Paper,
-                        Hand::Scissors => Hand::Rock,
-                        Hand::Paper => Hand::Scissors,
-                    }, //lose,
+                    "Z" => them.get_win_play(),
                     _ => panic!("haha business"),
                 };
 
@@ -92,6 +84,22 @@ impl Hand {
             Hand::Rock => 1,
             Hand::Paper => 2,
             Hand::Scissors => 3,
+        }
+    }
+
+    fn get_lose_play(&self) -> Self {
+        match self {
+            Hand::Rock => Hand::Scissors,
+            Hand::Paper => Hand::Rock,
+            Hand::Scissors => Hand::Paper,
+        }
+    }
+
+    fn get_win_play(&self) -> Self {
+        match self {
+            Hand::Rock => Hand::Paper,
+            Hand::Paper => Hand::Scissors,
+            Hand::Scissors => Hand::Rock,
         }
     }
 }
