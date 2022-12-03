@@ -1,4 +1,5 @@
 use crate::prelude::ConstChunkIterator;
+use std::collections::HashSet;
 
 pub fn run() {
     let input = include_str!("input/day3.txt");
@@ -9,19 +10,70 @@ pub fn run() {
 }
 
 fn task1(input: &str) -> usize {
-    let iter: ConstChunkIterator<2> = input.into();
+    input
+        .lines()
+        .map(|line| line.split_at(line.len() / 2))
+        .map(|(c1, c2)| {
+            let bp: HashSet<_> = c1.chars().collect();
 
-    for x in iter {
-        println!("{x:?}")
+            c2.chars().find(|c| bp.contains(c)).map(score).unwrap()
+        })
+        .sum()
+}
+
+fn score(c: char) -> usize {
+    match c {
+        'a'..='z' => c as usize - 0x60,
+        'A'..='Z' => 26 + c as usize - 0x40,
+        _ => panic!("it ain't ascii char: {c}"),
     }
-
-    0
 }
 
 fn task2(input: &str) -> usize {
-    0
-}
+    let iter: ConstChunkIterator<3> = input.into();
 
-fn priority(c: char) -> usize {
-    todo!()
+    iter.map(|[b1, b2, b3]| {
+        [
+            HashSet::from_iter(b1.chars()),
+            HashSet::from_iter(b2.chars()),
+            HashSet::from_iter(b3.chars()),
+        ]
+    })
+    .map(|bags| {
+        bags.into_iter()
+            .reduce(|acc, next| acc.intersection(&next).cloned().collect::<HashSet<_>>())
+            .map(|set| set.into_iter().next().unwrap())
+            .map(score)
+            .unwrap()
+    })
+    .sum()
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn task_1_example_test() {
+        let input = "vJrwpWtwJgWrhcsFMMfFFhFp\njqHRNqRjqzjGDLGLrsFMfFZSrLrFZsSL\nPmmdzqPrVvPwwTWBwg\nwMqvLMZHhHMvwLHjbvcjnnSBnvTQFn\nttgJtRGJQctTZtZT\nCrZsJsPPZsGzwwsLwLmpwMDw";
+
+        assert_eq!(task1(input), 157)
+    }
+
+    #[test]
+    fn task_2_example_test() {
+        let input = "vJrwpWtwJgWrhcsFMMfFFhFp\njqHRNqRjqzjGDLGLrsFMfFZSrLrFZsSL\nPmmdzqPrVvPwwTWBwg\nwMqvLMZHhHMvwLHjbvcjnnSBnvTQFn\nttgJtRGJQctTZtZT\nCrZsJsPPZsGzwwsLwLmpwMDw";
+
+        assert_eq!(task2(input), 70)
+    }
+
+    #[test]
+    fn test_score() {
+        ('a'..='z').enumerate().for_each(|(idx, c)| {
+            assert_eq!(score(c), idx + 1);
+        });
+
+        ('A'..='Z').enumerate().for_each(|(idx, c)| {
+            assert_eq!(score(c), idx + 27);
+        });
+    }
 }

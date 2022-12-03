@@ -1,5 +1,6 @@
 use std::str::Lines;
 
+#[derive(Debug)]
 pub struct ConstChunkIterator<'a, const N: usize> {
     contents: Lines<'a>,
     chunk_size: usize,
@@ -24,7 +25,7 @@ impl<'a, const N: usize> Iterator for ConstChunkIterator<'a, N> {
             result[idx] = self.contents.next().unwrap_or_default();
         });
 
-        if (result.iter().any(|f| *f == "")) {
+        if (result.iter().any(|f| f.is_empty())) {
             None
         } else {
             Some(result)
