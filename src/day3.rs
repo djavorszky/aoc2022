@@ -9,7 +9,7 @@ pub fn run() {
 }
 
 fn task1(input: &str) -> usize {
-    let iter: ConstChunkIterator<2> = ConstChunkIterator::new(input);
+    let iter: ConstChunkIterator<2> = input.into();
 
     for x in iter {
         println!("{x:?}")

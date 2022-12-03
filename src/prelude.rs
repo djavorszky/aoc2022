@@ -31,3 +31,9 @@ impl<'a, const N: usize> Iterator for ConstChunkIterator<'a, N> {
         }
     }
 }
+
+impl<'a, const N: usize> From<&'a str> for ConstChunkIterator<'a, N> {
+    fn from(s: &'a str) -> Self {
+        Self::new(s)
+    }
+}
