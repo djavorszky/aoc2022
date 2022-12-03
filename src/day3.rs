@@ -1,4 +1,4 @@
-use crate::prelude::ChunkLineIterator;
+use crate::prelude::ConstChunkIterator;
 
 pub fn run() {
     let input = include_str!("input/day3.txt");
@@ -9,10 +9,10 @@ pub fn run() {
 }
 
 fn task1(input: &str) -> usize {
-    let what = ChunkLineIterator::new(input, 2);
+    let iter: ConstChunkIterator<2> = ConstChunkIterator::new(input);
 
-    for x in what {
-        println!("Chunk: {x:?}")
+    for x in iter {
+        println!("{x:?}")
     }
 
     0

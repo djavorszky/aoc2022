@@ -1,25 +1,33 @@
 use std::str::Lines;
 
-pub struct ChunkLineIterator<'a> {
+pub struct ConstChunkIterator<'a, const N: usize> {
     contents: Lines<'a>,
     chunk_size: usize,
 }
 
-impl<'a> ChunkLineIterator<'a> {
-    pub fn new(input: &'a str, chunk_size: usize) -> Self {
+impl<'a, const N: usize> ConstChunkIterator<'a, N> {
+    pub fn new(input: &'a str) -> Self {
         Self {
             contents: input.lines(),
-            chunk_size,
+            chunk_size: N,
         }
     }
 }
 
-impl<'a> Iterator for ChunkLineIterator<'a> {
-    type Item = Vec<String>;
+impl<'a, const N: usize> Iterator for ConstChunkIterator<'a, N> {
+    type Item = [&'a str; N];
 
     fn next(&mut self) -> Option<Self::Item> {
-        (0..self.chunk_size)
-            .map(|_| self.contents.next().map(|c| c.to_string()))
-            .collect()
+        let mut result = [""; N];
+
+        (0..self.chunk_size).enumerate().for_each(|(idx, _)| {
+            result[idx] = self.contents.next().unwrap_or_default();
+        });
+
+        if (result.iter().any(|f| *f == "")) {
+            None
+        } else {
+            Some(result)
+        }
     }
 }
