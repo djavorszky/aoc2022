@@ -1,4 +1,4 @@
-use crate::prelude::ConstChunkIterator;
+use itertools::Itertools;
 use std::collections::HashSet;
 
 pub fn run() {
@@ -30,23 +30,19 @@ fn score(c: char) -> usize {
 }
 
 fn task2(input: &str) -> usize {
-    let iter: ConstChunkIterator<3> = input.into();
-
-    iter.map(|[b1, b2, b3]| {
-        [
-            HashSet::from_iter(b1.chars()),
-            HashSet::from_iter(b2.chars()),
-            HashSet::from_iter(b3.chars()),
-        ]
-    })
-    .map(|bags| {
-        bags.into_iter()
-            .reduce(|acc, next| acc.intersection(&next).cloned().collect::<HashSet<_>>())
-            .map(|set| set.into_iter().next().unwrap())
-            .map(score)
-            .unwrap()
-    })
-    .sum()
+    input
+        .lines()
+        .map(|line| HashSet::from_iter(line.chars()))
+        .chunks(3)
+        .into_iter()
+        .map(|bags| {
+            bags.into_iter()
+                .reduce(|acc, next| acc.intersection(&next).cloned().collect::<HashSet<_>>())
+                .map(|set| set.into_iter().next().unwrap())
+                .map(score)
+                .unwrap()
+        })
+        .sum()
 }
 #[cfg(test)]
 mod tests {
