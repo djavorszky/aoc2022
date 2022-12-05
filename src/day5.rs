@@ -16,6 +16,22 @@ pub fn run() -> Result<()> {
 }
 
 fn task1(input: &str) -> Result<String> {
+    let (instructions, mut port) = parse_input(input)?;
+
+    instructions.into_iter().for_each(|i| port.apply(i));
+
+    Ok(port.top_crates())
+}
+
+fn task2(input: &str) -> Result<String> {
+    let (instructions, mut port) = parse_input(input)?;
+
+    instructions.into_iter().for_each(|i| port.apply_9001(i));
+
+    Ok(port.top_crates())
+}
+
+fn parse_input(input: &str) -> Result<(Vec<Instruction>, CargoPort)> {
     let (crates, instructions) = input
         .split_once("\n\n")
         .ok_or_else(|| anyhow!("malformed input"))?;
@@ -31,13 +47,7 @@ fn task1(input: &str) -> Result<String> {
         .map(|line| line.parse::<Instruction>())
         .collect::<Result<Vec<Instruction>>>()?;
 
-    instructions.into_iter().for_each(|i| port.apply(i));
-
-    Ok(port.top_crates())
-}
-
-fn task2(input: &str) -> Result<usize> {
-    todo!()
+    Ok((instructions, port))
 }
 
 #[repr(transparent)]
@@ -61,6 +71,17 @@ impl CargoPort {
             let c = self.sections[instruction.from].pop().unwrap();
             self.sections[instruction.to].push(c);
         });
+    }
+
+    fn apply_9001(&mut self, instruction: Instruction) {
+        (0..instruction.amount)
+            .map(|_| self.sections[instruction.from].pop().unwrap())
+            .collect::<Vec<Crate>>()
+            .into_iter()
+            .rev()
+            .for_each(|c| {
+                self.sections[instruction.to].push(c);
+            });
     }
 
     fn top_crates(&self) -> String {
