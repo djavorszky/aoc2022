@@ -16,17 +16,19 @@ pub fn run() -> Result<()> {
 }
 
 fn task1(input: &str) -> Result<String> {
-    let (instructions, mut port) = parse_input(input)?;
+    let (instructions, port) = parse_input(input)?;
 
-    instructions.into_iter().for_each(|i| port.apply(i));
+    let port = port.with_crane(Crane::CrateMover).process(instructions)?;
 
     Ok(port.top_crates())
 }
 
 fn task2(input: &str) -> Result<String> {
-    let (instructions, mut port) = parse_input(input)?;
+    let (instructions, port) = parse_input(input)?;
 
-    instructions.into_iter().for_each(|i| port.apply_9001(i));
+    let port = port
+        .with_crane(Crane::CrateMover9001)
+        .process(instructions)?;
 
     Ok(port.top_crates())
 }
@@ -56,32 +58,71 @@ struct Crate(char);
 
 #[derive(Debug, PartialEq, Eq)]
 struct CargoPort {
+    crane: Crane,
     sections: Vec<Vec<Crate>>,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+enum Crane {
+    Missing,
+    CrateMover,
+    CrateMover9001,
+}
+
+impl Crane {
+    fn process_instructions(
+        &self,
+        stacks: &mut [Vec<Crate>],
+        instructions: Vec<Instruction>,
+    ) -> Result<()> {
+        match self {
+            Crane::Missing => bail!("No working crane"),
+            Crane::CrateMover9001 => {
+                instructions.into_iter().for_each(|i| {
+                    (0..i.amount)
+                        .map(|_| stacks[i.from].pop().unwrap())
+                        .collect::<Vec<Crate>>()
+                        .into_iter()
+                        .rev()
+                        .for_each(|c| {
+                            stacks[i.to].push(c);
+                        });
+                });
+                Ok(())
+            }
+            Crane::CrateMover => {
+                instructions.into_iter().for_each(|i| {
+                    (0..i.amount).for_each(|_| {
+                        let c = stacks[i.from].pop().unwrap();
+                        stacks[i.to].push(c);
+                    });
+                });
+                Ok(())
+            }
+        }
+    }
 }
 
 impl CargoPort {
     fn with_capacity(cap: usize) -> Self {
         Self {
+            crane: Crane::Missing,
             sections: vec![vec![]; cap],
         }
     }
 
-    fn apply(&mut self, instruction: Instruction) {
-        (0..instruction.amount).for_each(|_| {
-            let c = self.sections[instruction.from].pop().unwrap();
-            self.sections[instruction.to].push(c);
-        });
+    fn with_crane(self, crane: Crane) -> Self {
+        Self {
+            sections: self.sections,
+            crane,
+        }
     }
 
-    fn apply_9001(&mut self, instruction: Instruction) {
-        (0..instruction.amount)
-            .map(|_| self.sections[instruction.from].pop().unwrap())
-            .collect::<Vec<Crate>>()
-            .into_iter()
-            .rev()
-            .for_each(|c| {
-                self.sections[instruction.to].push(c);
-            });
+    fn process(mut self, instructions: Vec<Instruction>) -> Result<Self> {
+        self.crane
+            .process_instructions(&mut self.sections, instructions);
+
+        Ok(self)
     }
 
     fn top_crates(&self) -> String {
