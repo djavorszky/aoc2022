@@ -35,12 +35,13 @@ impl UniqueSpan for &str {
         }
 
         for idx in (0..self.len() - span_size) {
-            let set = self[idx..idx + span_size].chars().collect::<HashSet<_>>();
+            let end_idx = idx + span_size;
+            let set = self[idx..end_idx].chars().collect::<HashSet<_>>();
             if set.len() == span_size {
-                return Some(idx + span_size);
+                return Some(end_idx);
             }
         }
 
-        return None;
+        None
     }
 }
