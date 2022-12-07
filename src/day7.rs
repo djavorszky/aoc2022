@@ -17,13 +17,32 @@ pub fn run() -> Result<()> {
 }
 
 fn task1(input: &str) -> Result<usize> {
-    todo!()
+    let mut fs = FileSystem::new();
+
+    for command in parse_commands(input)? {
+        fs.apply(command)?;
+    }
+
+    Ok(fs
+        .get_directory_sizes()
+        .into_iter()
+        .filter(|n| *n <= 100_000)
+        .sum())
 }
 
 fn task2(input: &str) -> Result<usize> {
     todo!()
 }
 
+fn parse_commands(input: &str) -> Result<Vec<Command>> {
+    input
+        .split("$ ")
+        .filter(|part| !part.is_empty())
+        .map(|part| part.parse::<Command>())
+        .collect()
+}
+
+#[derive(Debug)]
 struct FileSystem {
     cwd: PathBuf,
     fs: HashMap<PathBuf, Entry>,
@@ -49,15 +68,15 @@ impl FileSystem {
         }
     }
 
-    fn register_paths(&mut self, directory: PathBuf, entries: Vec<Entry>) -> Result<()> {
-        let dir_as_str = directory.display();
+    fn register_paths(&mut self, entries: Vec<Entry>) -> Result<()> {
+        let dir_as_str = self.cwd.display();
 
         {
             // Need a scoped blocked, otherwise would borrow `self.fs` mutable twice
             // about which the borrow checker is _not happy_.
             let d = self
                 .fs
-                .get_mut(&directory)
+                .get_mut(&self.cwd)
                 .ok_or_else(|| anyhow!("Unknown directory: {}", dir_as_str))?;
 
             let d = match d {
@@ -69,12 +88,74 @@ impl FileSystem {
         }
 
         for entry in entries {
-            let path: PathBuf = format!("{dir_as_str}/{}", entry.name()).into();
+            let path: PathBuf = self.cwd.join(entry.name());
 
             self.fs.insert(path, entry);
         }
 
         Ok(())
+    }
+
+    fn apply(&mut self, command: Command) -> Result<()> {
+        match command {
+            Command::Ls(entries) => {
+                self.register_paths(entries);
+
+                Ok(())
+            }
+            Command::ChDir(target) => {
+                self.cwd = match target {
+                    Target::Root => "/".into(),
+                    Target::Up => self
+                        .cwd
+                        .parent()
+                        .map(|parent| parent.to_path_buf())
+                        .ok_or_else(|| anyhow!("Can't go up from path: {}", self.cwd.display()))?,
+                    Target::Dir(dir) => self.cwd.join(dir),
+                };
+
+                Ok(())
+            }
+        }
+    }
+
+    fn get_directory_sizes(&self) -> Vec<usize> {
+        fn walk_folders(fs: &FileSystem, pb: &PathBuf, res: &mut Vec<usize>) -> Result<usize> {
+            let entry = fs
+                .fs
+                .get(pb)
+                .ok_or_else(|| anyhow!("can't walk into {}", pb.display()))?;
+
+            if let Entry::Dir(dir) = entry {
+                // I'm lazy to do error checking here....
+
+                let mut size = 0;
+                for child_name in dir.children.clone() {
+                    let child_path = pb.join(child_name);
+                    let child = fs
+                        .fs
+                        .get(&child_path)
+                        .ok_or_else(|| anyhow!("can't find child",))?;
+
+                    match child {
+                        Entry::File(f) => size += f.size,
+                        Entry::Dir(d) => size += walk_folders(fs, &child_path, res)?,
+                    }
+                }
+
+                res.push(size);
+
+                return Ok(size);
+            }
+            bail!("not a directory: {}", entry.name())
+        }
+
+        let mut start: PathBuf = "/".into();
+        let mut res = Vec::new();
+
+        walk_folders(self, &start, &mut res);
+
+        res
     }
 }
 
@@ -119,7 +200,7 @@ impl FromStr for Target {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self> {
-        let res = match s {
+        let res = match s.trim() {
             ".." => Self::Up,
             "/" => Self::Root,
             dir => Self::Dir(dir.to_string()),
@@ -219,5 +300,11 @@ mod tests {
         let expected = Command::Ls(vec![Entry::dir("ohno"), Entry::file("f.txt", 12001)]);
 
         assert_eq!(input.parse::<Command>().unwrap(), expected);
+    }
+
+    fn test_task_1() {
+        let input = include_str!("input/day7_example.txt");
+
+        assert_eq!(task1(input).unwrap(), 95437);
     }
 }
