@@ -1,6 +1,7 @@
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},
+    str::FromStr,
 };
 
 use crate::prelude::*;
@@ -77,6 +78,51 @@ impl FileSystem {
     }
 }
 
+#[derive(Debug, PartialEq, Eq, Clone)]
+enum Command {
+    Ls(Vec<String>),
+    ChDir(Target),
+}
+
+impl FromStr for Command {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        if s.starts_with("cd") {
+            let (_, s) = s
+                .split_once(' ')
+                .ok_or_else(|| anyhow!("Invalid chdir pattern: {s}"))?;
+
+            let target: Target = s.parse()?;
+
+            Ok(Self::ChDir(target))
+        } else {
+            todo!()
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+enum Target {
+    Root,
+    Up,
+    Dir(String),
+}
+
+impl FromStr for Target {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        let res = match s {
+            ".." => Self::Up,
+            "/" => Self::Root,
+            dir => Self::Dir(dir.to_string()),
+        };
+
+        Ok(res)
+    }
+}
+
 enum Entry {
     File(File),
     Dir(Directory),
@@ -133,9 +179,12 @@ impl File {
 mod tests {
 
     use super::*;
+    use test_case::test_case;
 
-    #[test]
-    fn it_works() {
-        assert_eq!(1 + 1, 2);
+    #[test_case("cd ..", Command::ChDir(Target::Up) ; "cd_up")]
+    #[test_case("cd /", Command::ChDir(Target::Root) ; "cd_root")]
+    #[test_case("cd hehe", Command::ChDir(Target::Dir("hehe".to_string())) ; "cd_hehe")]
+    fn test_command_parse_chdir(input: &str, expected: Command) {
+        assert_eq!(input.parse::<Command>().unwrap(), expected);
     }
 }
