@@ -31,7 +31,31 @@ fn task1(input: &str) -> Result<usize> {
 }
 
 fn task2(input: &str) -> Result<usize> {
-    todo!()
+    let mut fs = FileSystem::new();
+
+    for command in parse_commands(input)? {
+        fs.apply(command)?;
+    }
+
+    let directory_sizes = fs.get_directory_sizes();
+
+    let total_size: usize = *directory_sizes
+        .iter()
+        .max()
+        .ok_or_else(|| anyhow!("numbers should have maxmum values"))?;
+    let free_space = 70000000 - total_size;
+
+    let mut smallest_big_folder_sizes: Vec<usize> = directory_sizes
+        .into_iter()
+        .filter(|n| *n + free_space > 30_000_000)
+        .collect();
+
+    smallest_big_folder_sizes.sort();
+
+    smallest_big_folder_sizes
+        .into_iter()
+        .min()
+        .ok_or_else(|| anyhow!("numbers should have minimum values"))
 }
 
 fn parse_commands(input: &str) -> Result<Vec<Command>> {
@@ -302,9 +326,17 @@ mod tests {
         assert_eq!(input.parse::<Command>().unwrap(), expected);
     }
 
+    #[test]
     fn test_task_1() {
         let input = include_str!("input/day7_example.txt");
 
         assert_eq!(task1(input).unwrap(), 95437);
+    }
+
+    #[test]
+    fn test_task_2() {
+        let input = include_str!("input/day7_example.txt");
+
+        assert_eq!(task2(input).unwrap(), 24933642);
     }
 }
