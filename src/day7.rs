@@ -80,7 +80,7 @@ impl FileSystem {
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 enum Command {
-    Ls(Vec<String>),
+    Ls(Vec<Entry>),
     ChDir(Target),
 }
 
@@ -97,7 +97,13 @@ impl FromStr for Command {
 
             Ok(Self::ChDir(target))
         } else {
-            todo!()
+            let entries = s
+                .lines()
+                .skip(1)
+                .map(|line| line.parse::<Entry>())
+                .collect::<Result<Vec<Entry>>>()?;
+
+            Ok(Self::Ls(entries))
         }
     }
 }
@@ -123,9 +129,27 @@ impl FromStr for Target {
     }
 }
 
+#[derive(Debug, PartialEq, Eq, Clone)]
 enum Entry {
     File(File),
     Dir(Directory),
+}
+
+impl FromStr for Entry {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        let (first, second) = s
+            .split_once(' ')
+            .ok_or_else(|| anyhow!("Invalid entry pattern: {s}"))?;
+
+        if first == "dir" {
+            return Ok(Self::dir(second));
+        }
+
+        let size = first.parse::<usize>()?;
+        Ok(Self::file(second, size))
+    }
 }
 
 impl Entry {
@@ -145,7 +169,7 @@ impl Entry {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 struct Directory {
     name: String,
     children: Vec<String>,
@@ -160,7 +184,7 @@ impl Directory {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 struct File {
     name: String,
     size: usize,
@@ -185,6 +209,15 @@ mod tests {
     #[test_case("cd /", Command::ChDir(Target::Root) ; "cd_root")]
     #[test_case("cd hehe", Command::ChDir(Target::Dir("hehe".to_string())) ; "cd_hehe")]
     fn test_command_parse_chdir(input: &str, expected: Command) {
+        assert_eq!(input.parse::<Command>().unwrap(), expected);
+    }
+
+    #[test]
+    fn test_command_parse_ls() {
+        let input = "ls\ndir ohno\n12001 f.txt";
+
+        let expected = Command::Ls(vec![Entry::dir("ohno"), Entry::file("f.txt", 12001)]);
+
         assert_eq!(input.parse::<Command>().unwrap(), expected);
     }
 }
