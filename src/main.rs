@@ -7,6 +7,7 @@ mod day4;
 mod day5;
 mod day6;
 mod day7;
+mod day8;
 
 pub mod prelude {
     pub use anyhow::{anyhow, bail, Context, Error, Result};
@@ -16,11 +17,12 @@ pub mod prelude {
 use crate::prelude::*;
 
 fn main() -> Result<()> {
-    //day1::run()
-    //day2::run()
-    //day3::run()
-    //day4::run()
-    //day5::run()
+    // day1::run()
+    // day2::run()
+    // day3::run()
+    // day4::run()
+    // day5::run()
     // day6::run()
-    day7::run()
+    // day7::run()
+    day8::run()
 }
