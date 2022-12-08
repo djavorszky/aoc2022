@@ -12,53 +12,44 @@ pub fn run() -> Result<()> {
 
 fn task1(input: &str) -> Result<usize> {
     let matrix = to_matrix(input);
+    let len = matrix.len();
 
-    let by_rows = matrix
-        .iter()
-        .skip(1)
-        .take(matrix.len() - 2)
-        .map(|trees| count_trees(trees))
-        .sum::<usize>();
+    let edges = len * 4 - 4;
 
-    let width = matrix.first().map(|f| f.len()).unwrap();
+    let visible_trees = (1..len - 1)
+        .cartesian_product(1..len - 1)
+        .filter(|(row, col)| {
+            visible_horizontal(&matrix, *row, *col) || visible_vertical(&matrix, *row, *col)
+        })
+        .count();
 
-    let transposed = transpose(matrix);
+    Ok(visible_trees + edges)
+}
 
-    let by_cols = transposed
-        .iter()
-        .skip(1)
-        .take(transposed.len() - 2)
-        .map(|trees| count_trees(trees))
-        .sum::<usize>();
+fn visible_vertical(matrix: &[Vec<usize>], row: usize, col: usize) -> bool {
+    let tree = &matrix[row][col];
 
-    let height = transposed.first().map(|f| f.len()).unwrap();
+    let col: Vec<&usize> = (0..matrix.len()).map(|idx| &matrix[idx][col]).collect();
 
-    let edge = (2 * width + 2 * height - 4);
+    let visible_up = col[0..row].iter().all(|t| t < &tree);
+    let visible_down = col[row + 1..col.len()].iter().all(|t| t < &tree);
 
-    dbg!(width, height);
-    dbg!(edge);
+    visible_up || visible_down
+}
 
-    Ok(edge + by_rows + by_cols)
+fn visible_horizontal(matrix: &[Vec<usize>], row: usize, col: usize) -> bool {
+    let row = &matrix[row];
+
+    let tree = row[col];
+
+    let visible_left = row[0..col].iter().all(|t| t < &tree);
+    let visible_right = row[col + 1..row.len()].iter().all(|t| t < &tree);
+
+    visible_left || visible_right
 }
 
 fn task2(input: &str) -> Result<usize> {
     todo!()
-}
-
-fn count_trees(trees: &[usize]) -> usize {
-    // todo: 1232241 - current algo finds only "123".
-    // todo: need to find 1234 (because 4 is visible above 224)
-    trees
-        .iter()
-        .tuple_windows()
-        .take_while(|(n1, n2)| n2 > n1)
-        .count()
-        + trees
-            .iter()
-            .rev()
-            .tuple_windows()
-            .take_while(|(n1, n2)| n2 > n1)
-            .count()
 }
 
 fn to_matrix(input: &str) -> Vec<Vec<usize>> {
@@ -72,32 +63,10 @@ fn to_matrix(input: &str) -> Vec<Vec<usize>> {
         .collect::<Vec<Vec<usize>>>()
 }
 
-/// from https://stackoverflow.com/a/64499219/5664341
-fn transpose<T>(v: Vec<Vec<T>>) -> Vec<Vec<T>> {
-    let len = v[0].len();
-    let mut iters: Vec<_> = v.into_iter().map(|n| n.into_iter()).collect();
-    (0..len)
-        .map(|_| {
-            iters
-                .iter_mut()
-                .map(|n| n.next().unwrap())
-                .collect::<Vec<T>>()
-        })
-        .collect()
-}
-
 #[cfg(test)]
 mod tests {
 
     use super::*;
-
-    #[test]
-    fn transpose_works() {
-        let input = vec![vec![1, 1, 1], vec![2, 2, 2], vec![3, 3, 3]];
-        let expected = vec![vec![1, 2, 3], vec![1, 2, 3], vec![1, 2, 3]];
-
-        assert_eq!(transpose(input), expected);
-    }
 
     #[test]
     fn test_task_1() {
