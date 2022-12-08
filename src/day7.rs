@@ -1,6 +1,6 @@
 use std::{
     collections::HashMap,
-    path::{Path, PathBuf},
+    path::{PathBuf},
     str::FromStr,
 };
 
@@ -163,7 +163,7 @@ impl FileSystem {
 
                     match child {
                         Entry::File(f) => size += f.size,
-                        Entry::Dir(d) => size += walk_folders(fs, &child_path, res)?,
+                        Entry::Dir(_d) => size += walk_folders(fs, &child_path, res)?,
                     }
                 }
 
@@ -174,7 +174,7 @@ impl FileSystem {
             bail!("not a directory: {}", entry.name())
         }
 
-        let mut start: PathBuf = "/".into();
+        let start: PathBuf = "/".into();
         let mut res = Vec::new();
 
         walk_folders(self, &start, &mut res);

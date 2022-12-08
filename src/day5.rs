@@ -38,7 +38,7 @@ fn parse_input(input: &str) -> Result<(Vec<Instruction>, CargoPort)> {
         .split_once("\n\n")
         .ok_or_else(|| anyhow!("malformed input"))?;
 
-    let mut port: CargoPort = crates
+    let port: CargoPort = crates
         .lines()
         .map(|s| s.to_string())
         .collect::<Vec<String>>()
@@ -199,7 +199,7 @@ impl FromStr for Instruction {
 #[cfg(test)]
 mod tests {
 
-    use super::*;
+    
 
     #[test]
     fn it_works() {
