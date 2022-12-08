@@ -34,12 +34,15 @@ impl UniqueSpan for &str {
             return None;
         }
 
+        let mut set = HashSet::with_capacity(span_size);
         for idx in 0..self.len() - span_size {
             let end_idx = idx + span_size;
-            let set = self[idx..end_idx].chars().collect::<HashSet<_>>();
+            set.extend(self[idx..end_idx].chars());
             if set.len() == span_size {
                 return Some(end_idx);
             }
+
+            set.clear()
         }
 
         None
