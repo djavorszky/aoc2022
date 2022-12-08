@@ -12,13 +12,13 @@ pub fn run() -> Result<()> {
     Ok(())
 }
 
-fn task1(input: &str) -> Result<usize> {
+pub fn task1(input: &str) -> Result<usize> {
     input
         .find_unique_span_idx(4)
         .ok_or_else(|| anyhow!("Did not find unique span size"))
 }
 
-fn task2(input: &str) -> Result<usize> {
+pub fn task2(input: &str) -> Result<usize> {
     input
         .find_unique_span_idx(14)
         .ok_or_else(|| anyhow!("Did not find unique span size"))
