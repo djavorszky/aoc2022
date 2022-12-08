@@ -1,8 +1,4 @@
-use std::{
-    collections::HashMap,
-    path::{PathBuf},
-    str::FromStr,
-};
+use std::{collections::HashMap, path::PathBuf, str::FromStr};
 
 use crate::prelude::*;
 
@@ -23,11 +19,9 @@ fn task1(input: &str) -> Result<usize> {
         fs.apply(command)?;
     }
 
-    Ok(fs
-        .get_directory_sizes()
-        .into_iter()
-        .filter(|n| *n <= 100_000)
-        .sum())
+    let sizes = fs.get_directory_sizes()?;
+
+    Ok(sizes.into_iter().filter(|n| *n <= 100_000).sum())
 }
 
 fn task2(input: &str) -> Result<usize> {
@@ -37,7 +31,7 @@ fn task2(input: &str) -> Result<usize> {
         fs.apply(command)?;
     }
 
-    let directory_sizes = fs.get_directory_sizes();
+    let directory_sizes = fs.get_directory_sizes()?;
 
     let total_size: usize = *directory_sizes
         .iter()
@@ -81,17 +75,6 @@ impl FileSystem {
         Self { cwd: root_path, fs }
     }
 
-    fn cwd(&self) -> Result<Directory> {
-        match self
-            .fs
-            .get(&self.cwd)
-            .ok_or_else(|| anyhow!("cwd not in file system: {}", self.cwd.display()))?
-        {
-            Entry::File(_) => bail!("cwd is somehow a file: {}", self.cwd.display()),
-            Entry::Dir(dir) => Ok(dir.clone()),
-        }
-    }
-
     fn register_paths(&mut self, entries: Vec<Entry>) -> Result<()> {
         let dir_as_str = self.cwd.display();
 
@@ -123,7 +106,7 @@ impl FileSystem {
     fn apply(&mut self, command: Command) -> Result<()> {
         match command {
             Command::Ls(entries) => {
-                self.register_paths(entries);
+                self.register_paths(entries)?;
 
                 Ok(())
             }
@@ -143,7 +126,7 @@ impl FileSystem {
         }
     }
 
-    fn get_directory_sizes(&self) -> Vec<usize> {
+    fn get_directory_sizes(&self) -> Result<Vec<usize>> {
         fn walk_folders(fs: &FileSystem, pb: &PathBuf, res: &mut Vec<usize>) -> Result<usize> {
             let entry = fs
                 .fs
@@ -177,9 +160,9 @@ impl FileSystem {
         let start: PathBuf = "/".into();
         let mut res = Vec::new();
 
-        walk_folders(self, &start, &mut res);
+        walk_folders(self, &start, &mut res)?;
 
-        res
+        Ok(res)
     }
 }
 

@@ -120,7 +120,7 @@ impl CargoPort {
 
     fn process(mut self, instructions: Vec<Instruction>) -> Result<Self> {
         self.crane
-            .process_instructions(&mut self.sections, instructions);
+            .process_instructions(&mut self.sections, instructions)?;
 
         Ok(self)
     }
@@ -193,16 +193,5 @@ impl FromStr for Instruction {
             from: parts.next().ok_or_else(err)? - 1,
             to: parts.next().ok_or_else(err)? - 1,
         })
-    }
-}
-
-#[cfg(test)]
-mod tests {
-
-    
-
-    #[test]
-    fn it_works() {
-        assert_eq!(1 + 1, 2);
     }
 }

@@ -1,5 +1,3 @@
-
-
 pub fn run() {
     let input = include_str!("input/day2.txt");
 
