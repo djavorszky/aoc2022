@@ -49,7 +49,60 @@ fn visible_horizontal(matrix: &[Vec<usize>], row: usize, col: usize) -> bool {
 }
 
 fn task2(input: &str) -> Result<usize> {
-    todo!()
+    let matrix = to_matrix(input);
+    let len = matrix.len();
+
+    (1..len - 1)
+        .cartesian_product(1..len - 1)
+        .map(|(row, col)| score_horizontal(&matrix, row, col) * score_vertical(&matrix, row, col))
+        .max()
+        .ok_or_else(|| anyhow!("No max for usizes: press X for doubt."))
+}
+
+fn score_vertical(matrix: &[Vec<usize>], row: usize, col: usize) -> usize {
+    let tree = &matrix[row][col];
+
+    let col: Vec<&usize> = (0..matrix.len()).map(|idx| &matrix[idx][col]).collect();
+
+    let mut score_down = 0;
+    for t in col.iter().skip(row + 1) {
+        score_down += 1;
+        if t >= &tree {
+            break;
+        }
+    }
+    let mut score_up = 0;
+    for t in col.iter().take(row).rev() {
+        score_up += 1;
+        if t >= &tree {
+            break;
+        }
+    }
+
+    score_down * score_up
+}
+
+fn score_horizontal(matrix: &[Vec<usize>], row: usize, col: usize) -> usize {
+    let row = &matrix[row];
+    let tree = row[col];
+
+    let mut score_right = 0;
+    for t in row.iter().skip(col + 1) {
+        score_right += 1;
+        if t >= &tree {
+            break;
+        }
+    }
+    let mut score_left = 0;
+
+    for t in row.iter().take(col).rev() {
+        score_left += 1;
+        if t >= &tree {
+            break;
+        }
+    }
+
+    score_left * score_right
 }
 
 fn to_matrix(input: &str) -> Vec<Vec<usize>> {
@@ -73,5 +126,20 @@ mod tests {
         let input = include_str!("input/day8_example.txt");
 
         assert_eq!(task1(input).unwrap(), 21)
+    }
+
+    #[test]
+    fn test_task_2() {
+        let input = include_str!("input/day8_example.txt");
+
+        assert_eq!(task2(input).unwrap(), 8)
+    }
+
+    #[test]
+    fn test_score_for_tree() {
+        let input = to_matrix(include_str!("input/day8_example.txt"));
+
+        assert_eq!(score_vertical(&input, 3, 2), 2);
+        assert_eq!(score_horizontal(&input, 3, 2), 4)
     }
 }
