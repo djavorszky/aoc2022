@@ -29,7 +29,15 @@ fn task1(input: &str) -> Result<usize> {
 }
 
 fn task2(input: &str) -> Result<usize> {
-    todo!()
+    let mut world = LongerRopeWorld::new();
+
+    for line in input.lines() {
+        let instruction: Instruction = line.parse()?;
+
+        world.tick(instruction);
+    }
+
+    Ok(world.touched.len())
 }
 
 const NORTH: Vector2 = Vector2(0, 1);
@@ -38,6 +46,45 @@ const SOUTH: Vector2 = Vector2(0, -1);
 const WEST: Vector2 = Vector2(-1, 0);
 
 const ZERO: Vector2 = Vector2(0, 0);
+
+struct LongerRopeWorld {
+    touched: HashSet<Vector2>,
+    rope: [Vector2; 10],
+}
+
+impl LongerRopeWorld {
+    fn new() -> Self {
+        Self {
+            touched: HashSet::from([ZERO]),
+            rope: [ZERO; 10],
+        }
+    }
+
+    fn tick(&mut self, i: Instruction) {
+        (0..i.amount).for_each(|_| {
+            let mut new_rope = [ZERO; 10];
+
+            new_rope[0] = self.rope[0] + &i.direction;
+
+            self.rope
+                .iter()
+                .enumerate()
+                .skip(1)
+                .for_each(|(idx, knot)| {
+                    let parent = new_rope[idx - 1];
+
+                    new_rope[idx] = if !knot.touching(&parent) {
+                        knot.move_towards(&parent)
+                    } else {
+                        *knot
+                    }
+                });
+            self.touched.insert(new_rope[9]);
+
+            self.rope = new_rope;
+        });
+    }
+}
 
 #[derive(Debug)]
 struct World {
@@ -63,8 +110,6 @@ impl World {
                 self.tail = self.tail.move_towards(&self.head);
                 self.touched.insert(self.tail);
             }
-
-            // dbg!(&self.head, self.tail);
         })
     }
 }
@@ -192,5 +237,19 @@ mod tests {
     #[test_case(ZERO, Vector2(-1, 2), Vector2(-1, 1) ; "move nw")]
     fn test_move_towards_double(first: Vector2, second: Vector2, expected: Vector2) {
         assert_eq!(first.move_towards(&second), expected);
+    }
+
+    #[test]
+    fn test_task_2_small() {
+        let input = include_str!("input/day9_example.txt");
+
+        assert_eq!(task2(input).unwrap(), 1);
+    }
+
+    #[test]
+    fn test_task_2_large() {
+        let input = include_str!("input/day9_example_large.txt");
+
+        assert_eq!(task2(input).unwrap(), 36);
     }
 }
