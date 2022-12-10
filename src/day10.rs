@@ -24,12 +24,36 @@ fn task1(input: &str) -> Result<isize> {
 
     Ok([20, 60, 100, 140, 180, 220]
         .iter()
-        .map(|v| cpu.signal_strength(*v).expect("These should be in range"))
+        .map(|v| cpu.signal(*v) * v)
         .sum())
 }
 
-fn task2(input: &str) -> Result<usize> {
-    todo!()
+fn task2(input: &str) -> Result<String> {
+    let mut cpu = Cpu::new();
+
+    let signals: Vec<Signal> = input
+        .lines()
+        .map(|line| line.parse::<Signal>())
+        .collect::<Result<Vec<Signal>>>()?;
+
+    signals.iter().for_each(|s| cpu.process(s));
+
+    Ok((0..6)
+        .map(|row| {
+            (0..40)
+                .map(|col| {
+                    let cycle = row * 40 + col + 1;
+                    let signal = cpu.signal(cycle);
+
+                    if (signal - col).abs() < 2 {
+                        '#'
+                    } else {
+                        '.'
+                    }
+                })
+                .join("")
+        })
+        .join("\n"))
 }
 
 struct Cpu {
@@ -52,23 +76,23 @@ impl Cpu {
             Signal::Noop => self.cycle += 1,
             Signal::AddX(x) => {
                 self.cycle += 2;
-                self.register_history.insert(self.cycle, *x);
+                self.register_history.insert(self.cycle + 1, *x);
             }
         }
     }
 
-    fn signal_strength(&self, cycle: isize) -> Result<isize> {
+    fn signal(&self, cycle: isize) -> isize {
         let mut register_value: isize = 0;
 
         for (registered_cycle, change) in self.register_history.iter() {
-            if *registered_cycle >= cycle {
-                return Ok(register_value * cycle);
+            if *registered_cycle > cycle {
+                return register_value;
             }
 
             register_value += change
         }
 
-        bail!("Too much was asked")
+        register_value
     }
 }
 
@@ -114,5 +138,13 @@ mod tests {
         let input = include_str!("input/day10_example.txt");
 
         assert_eq!(task1(input).unwrap(), 13140);
+    }
+
+    #[test]
+    fn test_task_2() {
+        let input = include_str!("input/day10_example.txt");
+        let expected = include_str!("input/day10_example_task2.txt");
+
+        assert_eq!(task2(input).unwrap(), expected)
     }
 }
