@@ -12,16 +12,30 @@ pub fn run() -> Result<()> {
     Ok(())
 }
 
+enum Worry {
+    Defo,
+    Nope,
+}
+
 fn task1(input: &str) -> Result<usize> {
+    play_rounds(input, 20, Worry::Nope)
+}
+
+fn task2(input: &str) -> Result<usize> {
+    play_rounds(input, 10000, Worry::Defo)
+}
+
+fn play_rounds(input: &str, rounds: usize, worry: Worry) -> Result<usize> {
     let mut monkeys = input
         .split("\n\n")
         .map(|chunk| chunk.parse::<Monkey>())
         .collect::<Result<Vec<Monkey>>>()?;
 
     let mut items = monkeys.iter().map(|m| m.items.clone()).collect_vec();
-    for _ in 0..20 {
+    let divisor: usize = monkeys.iter().map(|m| m.division_value).product();
+    for _ in 0..rounds {
         for (idx, monkey) in monkeys.iter_mut().enumerate() {
-            let processed_items = monkey.process_items(items[idx].clone());
+            let processed_items = monkey.process_items(&items[idx], &worry, divisor);
 
             items[idx].clear();
 
@@ -36,10 +50,6 @@ fn task1(input: &str) -> Result<usize> {
     inspect_counts.sort_unstable();
 
     Ok(inspect_counts.iter().rev().take(2).product())
-}
-
-fn task2(input: &str) -> Result<usize> {
-    todo!()
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -151,20 +161,32 @@ impl FromStr for Monkey {
 }
 
 impl Monkey {
-    fn process_item(&self, item: usize) -> (usize, usize) {
-        let x = self.op.apply(item) / 3;
+    fn process_item(&self, item: usize, worry: &Worry, divisor: usize) -> (usize, usize) {
+        let x = {
+            let tmp = self.op.apply(item);
+            if matches!(worry, Worry::Nope) {
+                tmp / 3
+            } else {
+                tmp
+            }
+        };
 
-        if x % self.division_value == 0 {
-            (self.happy, x)
+        if self.division_value == 0 {
+            (self.happy, x % divisor)
         } else {
-            (self.sad, x)
+            (self.sad, x % divisor)
         }
     }
 
-    fn process_items(&mut self, thrown_items: Vec<usize>) -> Vec<(usize, usize)> {
+    fn process_items(
+        &mut self,
+        thrown_items: &[usize],
+        worry: &Worry,
+        divisor: usize,
+    ) -> Vec<(usize, usize)> {
         let items = thrown_items
             .iter()
-            .map(|i| self.process_item(*i))
+            .map(|i| self.process_item(*i, worry, divisor))
             .collect_vec();
 
         self.inspect_count += items.len();
@@ -191,5 +213,12 @@ mod tests {
         let input = include_str!("input/day11_example.txt");
 
         assert_eq!(task1(input).unwrap(), 10605);
+    }
+
+    #[test]
+    fn test_task_2() {
+        let input = include_str!("input/day11_example.txt");
+
+        assert_eq!(task2(input).unwrap(), 2713310158);
     }
 }
