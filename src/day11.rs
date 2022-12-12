@@ -171,7 +171,7 @@ impl Monkey {
             }
         };
 
-        if self.division_value == 0 {
+        if x % self.division_value == 0 {
             (self.happy, x % divisor)
         } else {
             (self.sad, x % divisor)
