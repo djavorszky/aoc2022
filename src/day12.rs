@@ -48,7 +48,43 @@ fn task1(input: &str) -> Result<usize> {
 }
 
 fn task2(input: &str) -> Result<usize> {
-    todo!()
+    let height_map = input
+        .lines()
+        .map(|line| line.chars().map(height).collect_vec())
+        .collect_vec();
+
+    let width = height_map[0].len();
+
+    let input = input.replace('\n', "");
+
+    let starting_points = input
+        .chars()
+        .enumerate()
+        .filter_map(|(idx, c)| if c == 'a' { Some(idx) } else { None })
+        .map(|idx| Vector2::from_idx(idx, width))
+        .collect_vec();
+
+    let end = input
+        .find('E')
+        .map(|idx| Vector2::from_idx(idx, width))
+        .ok_or_else(|| anyhow!("Can't find end"))?;
+
+    let map = Map::new(height_map);
+
+    let result = starting_points
+        .into_iter()
+        .filter_map(|p| {
+            dijkstra(
+                &p,
+                |p| map.neighbours(p).into_iter().map(|p| (p, 1)),
+                |p| *p == end,
+            )
+        })
+        .map(|(_, cost)| cost)
+        .min()
+        .ok_or_else(|| anyhow!("No minimum path found"))?;
+
+    Ok(result)
 }
 
 fn height(c: char) -> usize {
@@ -104,5 +140,11 @@ mod tests {
     fn test_task1() {
         let input = include_str!("input/day12_example.txt");
         assert_eq!(task1(input).unwrap(), 31);
+    }
+
+    #[test]
+    fn test_task2() {
+        let input = include_str!("input/day12_example.txt");
+        assert_eq!(task2(input).unwrap(), 29);
     }
 }
