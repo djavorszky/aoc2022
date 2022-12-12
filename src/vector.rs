@@ -8,7 +8,7 @@ pub const WEST: Vector2 = Vector2(-1, 0);
 pub const ZERO: Vector2 = Vector2(0, 0);
 
 #[derive(Hash, Debug, Eq, PartialEq, Clone, Copy)]
-pub struct Vector2(isize, isize);
+pub struct Vector2(pub isize, pub isize);
 
 impl Vector2 {
     pub fn clamp(&self, min: isize, max: isize) -> Self {
@@ -30,6 +30,13 @@ impl Vector2 {
 
     pub fn move_towards(&self, other: &Vector2) -> Vector2 {
         self + &(other - self).clamp(-1, 1)
+    }
+
+    pub fn from_idx(idx: usize, width: usize) -> Vector2 {
+        let x = (idx % width) as isize;
+        let y = (idx / width) as isize;
+
+        Vector2(x, y)
     }
 }
 
