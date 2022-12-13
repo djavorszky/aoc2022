@@ -1,5 +1,3 @@
-// Template
-
 use std::cmp::Ordering;
 use std::iter::zip;
 
