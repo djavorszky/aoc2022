@@ -45,7 +45,24 @@ fn task1(input: &str) -> Result<usize> {
 }
 
 fn task2(input: &str) -> Result<usize> {
-    todo!()
+    let mut values: Vec<Value> = input
+        .replace("\n\n", "\n")
+        .lines()
+        .map(|line| serde_json::from_str(line).map_err(|_| anyhow!("can't parse as json")))
+        .collect::<Result<Vec<Value>>>()?;
+
+    let divider1 = json!([[2]]);
+    let divider2 = json!([[6]]);
+
+    values.push(divider1.clone());
+    values.push(divider2.clone());
+
+    values.sort_by(cmp_value);
+
+    Ok(zip(values, 1..)
+        .filter(|(v, _)| v == &divider1 || v == &divider2)
+        .map(|(_, idx)| idx)
+        .product())
 }
 
 fn cmp_value(v1: &Value, v2: &Value) -> Ordering {
@@ -71,5 +88,12 @@ mod tests {
         let input = include_str!("input/day13_example.txt");
 
         assert_eq!(task1(input).unwrap(), 13);
+    }
+
+    #[test]
+    fn test_task_2() {
+        let input = include_str!("input/day13_example.txt");
+
+        assert_eq!(task2(input).unwrap(), 140);
     }
 }
