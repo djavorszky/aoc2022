@@ -28,7 +28,7 @@ fn task1(input: &str) -> Result<usize> {
         })
         .collect_vec();
 
-    let mut cave = Cave::from_topology(topology);
+    let mut cave = InfiniteCave::from_topology(topology);
 
     cave.start_simulation();
 
@@ -45,14 +45,33 @@ fn task2(input: &str) -> Result<usize> {
     todo!()
 }
 
-struct Cave {
+trait Cave {
+    fn is_blocked(&self, loc: Vector2) -> bool;
+    fn is_out_of_bounds(&self, loc: &Vector2) -> bool;
+
+    fn can_fall(&self, loc: &Vector2, direction: &Vector2) -> bool {
+        !self.is_blocked(loc + direction)
+    }
+}
+
+struct InfiniteCave {
     map: HashMap<Vector2, Thing>,
     min_x: isize,
     max_x: isize,
     max_y: isize,
 }
 
-impl Cave {
+impl Cave for InfiniteCave {
+    fn is_blocked(&self, loc: Vector2) -> bool {
+        self.map.contains_key(&loc)
+    }
+
+    fn is_out_of_bounds(&self, loc: &Vector2) -> bool {
+        loc.0 < self.min_x || loc.0 > self.max_x || loc.1 > self.max_y
+    }
+}
+
+impl InfiniteCave {
     fn from_topology(top: Vec<Vec<Vector2>>) -> Self {
         let mut map = HashMap::new();
 
@@ -105,21 +124,9 @@ impl Cave {
         }
     }
 
-    fn is_blocked(&self, loc: Vector2) -> bool {
-        self.map.contains_key(&loc)
-    }
-
-    fn can_fall(&self, loc: &Vector2, direction: &Vector2) -> bool {
-        !self.is_blocked(loc + direction)
-    }
-
-    fn out_of_bounds(&self, loc: &Vector2) -> bool {
-        loc.0 < self.min_x || loc.0 > self.max_x || loc.1 > self.max_y
-    }
-
     fn simulate(&mut self, mut sand: Vector2) -> SandResult {
         while self.can_fall(&sand, &DOWN) {
-            if self.out_of_bounds(&sand) {
+            if self.is_out_of_bounds(&sand) {
                 return SandResult::Fellthrough;
             }
 
@@ -142,12 +149,7 @@ const DOWN: Vector2 = Vector2(0, 1);
 const LEFT: Vector2 = Vector2(-1, 1);
 const RIGHT: Vector2 = Vector2(1, 1);
 
-enum SandResult {
-    Settled,
-    Fellthrough,
-}
-
-impl Display for Cave {
+impl Display for InfiniteCave {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(
             f,
@@ -187,6 +189,11 @@ impl Thing {
     }
 }
 
+enum SandResult {
+    Settled,
+    Fellthrough,
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -196,5 +203,11 @@ mod tests {
     fn test_task_1() {
         let input = include_str!("input/day14_example.txt");
         assert_eq!(task1(input).unwrap(), 24);
+    }
+
+    #[test]
+    fn test_task_2() {
+        let input = include_str!("input/day14_example.txt");
+        assert_eq!(task2(input).unwrap(), 93);
     }
 }
