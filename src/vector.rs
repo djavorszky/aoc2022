@@ -1,4 +1,9 @@
-use std::ops::{Add, Sub};
+use std::{
+    cmp::{max, min},
+    ops::{Add, Sub},
+};
+
+use itertools::Itertools;
 
 pub const NORTH: Vector2 = Vector2(0, 1);
 pub const EAST: Vector2 = Vector2(1, 0);
@@ -37,6 +42,18 @@ impl Vector2 {
         let y = (idx / width) as isize;
 
         Vector2(x, y)
+    }
+
+    pub fn line_to(&self, other: &Vector2) -> Vec<Vector2> {
+        if self.0 == other.0 {
+            // vertical line
+            let (min, max) = (min(self.1, other.1), max(self.1, other.1));
+            (min..=max).map(|y| Vector2(self.0, y)).collect_vec()
+        } else {
+            // horizontal line
+            let (min, max) = (min(self.0, other.0), max(self.0, other.0));
+            (min..=max).map(|x| Vector2(x, self.1)).collect_vec()
+        }
     }
 }
 
