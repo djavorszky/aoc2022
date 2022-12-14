@@ -6,9 +6,13 @@ use std::{
 use itertools::Itertools;
 
 pub const NORTH: Vector2 = Vector2(0, 1);
+pub const NORTH_EAST: Vector2 = Vector2(1, 1);
 pub const EAST: Vector2 = Vector2(1, 0);
+pub const SOUTH_EAST: Vector2 = Vector2(1, -1);
 pub const SOUTH: Vector2 = Vector2(0, -1);
+pub const SOUTH_WEST: Vector2 = Vector2(-1, -1);
 pub const WEST: Vector2 = Vector2(-1, 0);
+pub const NORTH_WEST: Vector2 = Vector2(-1, 1);
 
 pub const ZERO: Vector2 = Vector2(0, 0);
 

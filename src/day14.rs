@@ -1,15 +1,12 @@
-// Template
-
 use std::{
     collections::HashMap,
     fmt::{Display, Write},
-    hash::Hash,
 };
 
 use crate::{prelude::*, vector::Vector2};
 
 pub fn run() -> Result<()> {
-    let input = include_str!("input/day14_example.txt");
+    let input = include_str!("input/day14.txt");
 
     println!("{}", task1(input)?);
 
@@ -31,11 +28,17 @@ fn task1(input: &str) -> Result<usize> {
         })
         .collect_vec();
 
-    let cave = Cave::from_topology(topology);
+    let mut cave = Cave::from_topology(topology);
+
+    cave.start_simulation();
 
     println!("{cave}");
 
-    todo!()
+    Ok(cave
+        .map
+        .values()
+        .filter(|v| matches!(v, Thing::Sand))
+        .count())
 }
 
 fn task2(input: &str) -> Result<usize> {
@@ -90,6 +93,58 @@ impl Cave {
             max_y,
         }
     }
+
+    fn start_simulation(&mut self) {
+        loop {
+            let sand = Vector2(500, 0);
+
+            let res = self.simulate(sand);
+            if matches!(res, SandResult::Fellthrough) {
+                return;
+            }
+        }
+    }
+
+    fn is_blocked(&self, loc: Vector2) -> bool {
+        self.map.contains_key(&loc)
+    }
+
+    fn can_fall(&self, loc: &Vector2, direction: &Vector2) -> bool {
+        !self.is_blocked(loc + direction)
+    }
+
+    fn out_of_bounds(&self, loc: &Vector2) -> bool {
+        loc.0 < self.min_x || loc.0 > self.max_x || loc.1 > self.max_y
+    }
+
+    fn simulate(&mut self, mut sand: Vector2) -> SandResult {
+        while self.can_fall(&sand, &DOWN) {
+            if self.out_of_bounds(&sand) {
+                return SandResult::Fellthrough;
+            }
+
+            sand = &sand + &DOWN;
+        }
+
+        if self.can_fall(&sand, &LEFT) {
+            return self.simulate(&sand + &LEFT);
+        } else if self.can_fall(&sand, &RIGHT) {
+            return self.simulate(&sand + &RIGHT);
+        }
+
+        self.map.insert(sand, Thing::Sand);
+
+        SandResult::Settled
+    }
+}
+
+const DOWN: Vector2 = Vector2(0, 1);
+const LEFT: Vector2 = Vector2(-1, 1);
+const RIGHT: Vector2 = Vector2(1, 1);
+
+enum SandResult {
+    Settled,
+    Fellthrough,
 }
 
 impl Display for Cave {
