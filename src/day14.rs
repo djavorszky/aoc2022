@@ -42,7 +42,27 @@ fn task1(input: &str) -> Result<usize> {
 }
 
 fn task2(input: &str) -> Result<usize> {
-    todo!()
+    let topology = input
+        .lines()
+        .map(|line| {
+            line.split(" -> ")
+                .map(|part| {
+                    let (x, y) = part.split_once(',').unwrap();
+                    Vector2(x.parse().unwrap(), y.parse().unwrap())
+                })
+                .collect_vec()
+        })
+        .collect_vec();
+
+    let mut cave = BoundedCave::from_topology(topology);
+
+    cave.start_simulation();
+
+    Ok(cave
+        .map
+        .values()
+        .filter(|v| matches!(v, Thing::Sand))
+        .count())
 }
 
 trait Cave {
@@ -51,6 +71,67 @@ trait Cave {
 
     fn can_fall(&self, loc: &Vector2, direction: &Vector2) -> bool {
         !self.is_blocked(loc + direction)
+    }
+}
+
+struct BoundedCave {
+    map: HashMap<Vector2, Thing>,
+    floor_y: isize,
+}
+
+impl Cave for BoundedCave {
+    fn is_blocked(&self, loc: Vector2) -> bool {
+        self.map.contains_key(&loc) || loc.1 == self.floor_y
+    }
+
+    fn is_out_of_bounds(&self, _loc: &Vector2) -> bool {
+        false
+    }
+}
+
+impl BoundedCave {
+    fn from_topology(top: Vec<Vec<Vector2>>) -> Self {
+        let mut map = HashMap::new();
+
+        top.iter().for_each(|segment| {
+            segment
+                .windows(2)
+                .flat_map(|vs| vs[0].line_to(&vs[1]))
+                .for_each(|v| {
+                    map.insert(v, Thing::Rock);
+                });
+        });
+
+        let floor_y = map.keys().map(|v| v.1).max().map(|v| v + 2).unwrap();
+
+        Self { map, floor_y }
+    }
+
+    fn start_simulation(&mut self) {
+        loop {
+            let sand = Vector2(500, 0);
+            if self.is_blocked(sand) {
+                return;
+            }
+
+            self.simulate(sand);
+        }
+    }
+
+    fn simulate(&mut self, mut sand: Vector2) -> SandResult {
+        while self.can_fall(&sand, &DOWN) {
+            sand = &sand + &DOWN;
+        }
+
+        if self.can_fall(&sand, &LEFT) {
+            return self.simulate(&sand + &LEFT);
+        } else if self.can_fall(&sand, &RIGHT) {
+            return self.simulate(&sand + &RIGHT);
+        }
+
+        self.map.insert(sand, Thing::Sand);
+
+        SandResult::Settled
     }
 }
 
