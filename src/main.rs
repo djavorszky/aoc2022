@@ -1,5 +1,5 @@
 use aoc::{prelude::*, *};
 
 fn main() -> Result<()> {
-    day14::run()
+    day15::run()
 }

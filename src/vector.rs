@@ -3,6 +3,7 @@ use std::{
     ops::{Add, Sub},
 };
 
+use crate::prelude::*;
 use itertools::Itertools;
 
 pub const NORTH: Vector2 = Vector2(0, 1);
@@ -20,6 +21,10 @@ pub const ZERO: Vector2 = Vector2(0, 0);
 pub struct Vector2(pub isize, pub isize);
 
 impl Vector2 {
+    pub fn manhattan_distance(&self, other: &Vector2) -> isize {
+        (self.0 - other.0).abs() + (self.1 - other.1).abs()
+    }
+
     pub fn clamp(&self, min: isize, max: isize) -> Self {
         Self(self.0.clamp(min, max), self.1.clamp(min, max))
     }
@@ -77,10 +82,20 @@ impl Sub<&Vector2> for &Vector2 {
     }
 }
 
+impl TryFrom<(&str, &str)> for Vector2 {
+    type Error = Error;
+
+    fn try_from((v1, v2): (&str, &str)) -> Result<Self> {
+        let v1 = v1.parse::<isize>()?;
+        let v2 = v2.parse::<isize>()?;
+
+        Ok(Self(v1, v2))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::prelude::*;
 
     use test_case::test_case;
 
@@ -89,6 +104,15 @@ mod tests {
     #[test_case(Vector2(5, 2), Vector2(3, 1), Vector2(2, 1))]
     fn test_sub_vec(first: Vector2, second: Vector2, expected: Vector2) {
         let res = &first - &second;
+
+        assert_eq!(res, expected);
+    }
+
+    #[test_case(Vector2(4, 0), Vector2(1, 0), 3)]
+    #[test_case(Vector2(2, 1), Vector2(3, 0), 2)]
+    #[test_case(Vector2(5, 2), Vector2(3, 1), 3)]
+    fn test_manhattan_distance(first: Vector2, second: Vector2, expected: isize) {
+        let res = first.manhattan_distance(&second);
 
         assert_eq!(res, expected);
     }
