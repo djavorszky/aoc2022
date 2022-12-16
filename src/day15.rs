@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{ops::RangeInclusive, str::FromStr};
 
 use crate::{prelude::*, vector::Vector2};
 
@@ -7,7 +7,7 @@ pub fn run() -> Result<()> {
 
     println!("{}", task1(input, 2000000)?);
 
-    println!("{}", task2(input)?);
+    println!("{}", task2(input, 1..=4000000)?);
 
     Ok(())
 }
@@ -16,40 +16,12 @@ fn task1(input: &str, line: isize) -> Result<usize> {
     let sensors = input
         .lines()
         .map(|line| line.parse::<Sensor>().unwrap())
-        .filter(|s| s.in_range(line))
         .collect_vec();
 
-    let sensors_in_range = sensors.iter().filter(|s| s.in_range(line)).collect_vec();
-
-    let mut ranges = sensors_in_range
-        .iter()
-        .map(|sensor| {
-            let num_covered = sensor.range - (sensor.loc.1 - line).abs();
-
-            sensor.loc.0 - num_covered..=sensor.loc.0 + num_covered
-        })
-        .collect_vec();
-
-    ranges.sort_by(|a, b| a.start().cmp(b.start()));
-
-    let mut count = 0;
-    let mut covered_range = ranges[0].clone();
-
-    for range in ranges.iter().skip(1) {
-        if covered_range.start() < range.start() && covered_range.end() > range.end() {
-            continue;
-        }
-
-        if range.start() <= covered_range.end() {
-            covered_range = *covered_range.start()..=*range.end();
-            continue;
-        }
-
-        count += covered_range.count();
-        covered_range = range.clone();
-    }
-
-    count += covered_range.count();
+    let mut count = covered_ranges(&sensors, line)
+        .into_iter()
+        .flat_map(|rs| rs.into_iter().map(|r| r.count()).collect_vec())
+        .sum();
 
     count -= sensors
         .iter()
@@ -68,8 +40,63 @@ fn task1(input: &str, line: isize) -> Result<usize> {
     Ok(count)
 }
 
-fn task2(input: &str) -> Result<usize> {
+fn task2(input: &str, range: RangeInclusive<isize>) -> Result<usize> {
+    let sensors = input
+        .lines()
+        .map(|line| line.parse::<Sensor>().unwrap())
+        .collect_vec();
+
+    for line in range {
+        if let Some(ranges) = covered_ranges(&sensors, line) {
+            if ranges.len() != 1 {
+                println!("Found it on line {line}, ranges: {:?}", ranges);
+            }
+        }
+    }
+
     todo!()
+}
+
+fn covered_ranges(sensors: &[Sensor], line: isize) -> Option<Vec<RangeInclusive<isize>>> {
+    let sensors_in_range = sensors.iter().filter(|s| s.in_range(line)).collect_vec();
+
+    if sensors_in_range.is_empty() {
+        return None;
+    }
+
+    let mut ranges = sensors_in_range
+        .iter()
+        .map(|sensor| {
+            let num_covered = sensor.range - (sensor.loc.1 - line).abs();
+
+            sensor.loc.0 - num_covered..=sensor.loc.0 + num_covered
+        })
+        .collect_vec();
+
+    ranges.sort_by(|a, b| a.start().cmp(b.start()));
+
+    let mut row_ranges: Vec<RangeInclusive<isize>> = Vec::new();
+    let mut current_range = ranges[0].clone();
+
+    for range in ranges.iter().skip(1) {
+        if current_range.start() < range.start() && current_range.end() > range.end() {
+            continue;
+        }
+
+        if range.start() <= current_range.end() {
+            current_range = *current_range.start()..=*range.end();
+            continue;
+        }
+
+        row_ranges.push(current_range);
+        current_range = range.clone();
+    }
+
+    if row_ranges.is_empty() || row_ranges.last().unwrap() != &current_range {
+        row_ranges.push(current_range);
+    }
+
+    Some(row_ranges)
 }
 
 #[derive(PartialEq, Eq, Debug)]
@@ -81,7 +108,7 @@ struct Sensor {
 
 impl Sensor {
     fn in_range(&self, row: isize) -> bool {
-        (self.loc.1 - self.range).abs() < row
+        (self.loc.1 - row).abs() <= self.range
     }
 }
 
@@ -133,9 +160,29 @@ mod tests {
     }
 
     #[test]
+    fn sensor_in_range() {
+        let s = Sensor {
+            loc: Vector2(0, 0),
+            beacon_loc: Vector2(10, 0),
+            range: 10,
+        };
+
+        (0..=10).for_each(|row| assert!(s.in_range(row), "row {row}"));
+
+        (11..20).for_each(|row| assert!(!s.in_range(row), "row {row}"));
+    }
+
+    #[test]
     fn test_task_1() {
         let input = include_str!("input/day15_example.txt");
 
         assert_eq!(task1(input, 10).unwrap(), 26);
+    }
+
+    #[test]
+    fn test_task_2() {
+        let input = include_str!("input/day15_example.txt");
+
+        assert_eq!(task2(input, 1..=20).unwrap(), 56000011);
     }
 }
