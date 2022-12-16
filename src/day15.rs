@@ -13,39 +13,35 @@ pub fn run() -> Result<()> {
 }
 
 fn task1(input: &str, line: isize) -> Result<usize> {
-    let sensors_in_range = input
+    let sensors = input
         .lines()
         .map(|line| line.parse::<Sensor>().unwrap())
-        .filter(|s| (s.loc.1 - s.range).abs() < line)
+        .filter(|s| s.in_range(line))
         .collect_vec();
 
-    println!("Parsed");
+    let sensors_in_range = sensors.iter().filter(|s| s.in_range(line)).collect_vec();
 
     let mut ranges = sensors_in_range
         .iter()
         .map(|sensor| {
-            let num_covered = (sensor.loc.1 - line).abs();
+            let num_covered = sensor.range - (sensor.loc.1 - line).abs();
 
-            sensor.loc.0 - num_covered..sensor.loc.0 + num_covered
+            sensor.loc.0 - num_covered..=sensor.loc.0 + num_covered
         })
         .collect_vec();
 
-    ranges.sort_by(|a, b| a.start.cmp(&b.start));
+    ranges.sort_by(|a, b| a.start().cmp(b.start()));
 
     let mut count = 0;
     let mut covered_range = ranges[0].clone();
-    dbg!(&covered_range);
 
     for range in ranges.iter().skip(1) {
-        dbg!(&range, &covered_range);
-        if covered_range.start < range.start && covered_range.end > range.end {
-            println!("Contained");
+        if covered_range.start() < range.start() && covered_range.end() > range.end() {
             continue;
         }
 
-        if range.start < covered_range.end {
-            println!("Extend");
-            covered_range = covered_range.start..range.end;
+        if range.start() <= covered_range.end() {
+            covered_range = *covered_range.start()..=*range.end();
             continue;
         }
 
@@ -54,6 +50,20 @@ fn task1(input: &str, line: isize) -> Result<usize> {
     }
 
     count += covered_range.count();
+
+    count -= sensors
+        .iter()
+        .filter_map(|s| {
+            if s.loc.1 == line {
+                Some(s.loc.0)
+            } else if s.beacon_loc.1 == line {
+                Some(s.beacon_loc.0)
+            } else {
+                None
+            }
+        })
+        .unique()
+        .count();
 
     Ok(count)
 }
@@ -67,6 +77,12 @@ struct Sensor {
     loc: Vector2,
     beacon_loc: Vector2,
     range: isize,
+}
+
+impl Sensor {
+    fn in_range(&self, row: isize) -> bool {
+        (self.loc.1 - self.range).abs() < row
+    }
 }
 
 impl FromStr for Sensor {
