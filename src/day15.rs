@@ -40,7 +40,7 @@ fn task1(input: &str, line: isize) -> Result<usize> {
     Ok(count)
 }
 
-fn task2(input: &str, range: RangeInclusive<isize>) -> Result<usize> {
+fn task2(input: &str, range: RangeInclusive<isize>) -> Result<isize> {
     let sensors = input
         .lines()
         .map(|line| line.parse::<Sensor>().unwrap())
@@ -48,13 +48,15 @@ fn task2(input: &str, range: RangeInclusive<isize>) -> Result<usize> {
 
     for line in range {
         if let Some(ranges) = covered_ranges(&sensors, line) {
-            if ranges.len() != 1 {
-                println!("Found it on line {line}, ranges: {:?}", ranges);
+            if ranges.len() > 1 {
+                let first = ranges.first().unwrap();
+                let x = first.clone().last().unwrap() + 1;
+                return Ok(x * 4000000 + line);
             }
         }
     }
 
-    todo!()
+    bail!("Did not find");
 }
 
 fn covered_ranges(sensors: &[Sensor], line: isize) -> Option<Vec<RangeInclusive<isize>>> {
@@ -79,11 +81,11 @@ fn covered_ranges(sensors: &[Sensor], line: isize) -> Option<Vec<RangeInclusive<
     let mut current_range = ranges[0].clone();
 
     for range in ranges.iter().skip(1) {
-        if current_range.start() < range.start() && current_range.end() > range.end() {
+        if current_range.start() <= range.start() && current_range.end() >= range.end() {
             continue;
         }
 
-        if range.start() <= current_range.end() {
+        if range.start() - 1 <= *current_range.end() {
             current_range = *current_range.start()..=*range.end();
             continue;
         }
@@ -162,14 +164,15 @@ mod tests {
     #[test]
     fn sensor_in_range() {
         let s = Sensor {
-            loc: Vector2(0, 0),
-            beacon_loc: Vector2(10, 0),
+            loc: Vector2(10, 10),
+            beacon_loc: Vector2(10, 20),
             range: 10,
         };
 
-        (0..=10).for_each(|row| assert!(s.in_range(row), "row {row}"));
+        (0..=20).for_each(|row| assert!(s.in_range(row), "row {row}"));
 
-        (11..20).for_each(|row| assert!(!s.in_range(row), "row {row}"));
+        (21..30).for_each(|row| assert!(!s.in_range(row), "row {row}"));
+        (-10..0).for_each(|row| assert!(!s.in_range(row), "row {row}"));
     }
 
     #[test]
