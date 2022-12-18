@@ -40,23 +40,36 @@ fn task1(input: &str, line: isize) -> Result<usize> {
     Ok(count)
 }
 
+use rayon::prelude::*;
+
 fn task2(input: &str, range: RangeInclusive<isize>) -> Result<isize> {
     let sensors = input
         .lines()
         .map(|line| line.parse::<Sensor>().unwrap())
         .collect_vec();
 
-    for line in range {
-        if let Some(ranges) = covered_ranges(&sensors, line) {
-            if ranges.len() > 1 {
-                let first = ranges.first().unwrap();
-                let x = first.clone().last().unwrap() + 1;
-                return Ok(x * 4000000 + line);
+    let found = range
+        .into_par_iter()
+        .filter_map(|y| {
+            if let Some(ranges) = covered_ranges(&sensors, y) {
+                if ranges.len() > 1 {
+                    let first = ranges.first().unwrap();
+                    let x = first.clone().last().unwrap() + 1;
+                    Some((x, y))
+                } else {
+                    None
+                }
+            } else {
+                None
             }
-        }
-    }
+        })
+        .collect::<Vec<(isize, isize)>>();
 
-    bail!("Did not find");
+    if let Some((x, y)) = found.first() {
+        Ok(x * 4000000 + y)
+    } else {
+        bail!("Did not find");
+    }
 }
 
 fn covered_ranges(sensors: &[Sensor], line: isize) -> Option<Vec<RangeInclusive<isize>>> {
