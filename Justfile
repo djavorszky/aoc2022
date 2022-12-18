@@ -1,9 +1,12 @@
+default:
+  just --list
+
 check:
     cargo clippy
 
 # Run the tests
-test:
-    cargo nextest run
+test DAY:
+    cargo nextest run -- day{{DAY}}
 
 # Run the benchmarks
 bench:
